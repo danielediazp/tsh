@@ -2,7 +2,7 @@ import logging
 from typing import Any, Type, TypeVar
 
 from sqlalchemy import create_engine, event, Engine
-from sqlalchemy.orm import sessionmaker, Session, joinedload
+from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
 
 from .models import Base
@@ -33,6 +33,8 @@ class SqlManager:
             db_name (str): the file_path to the db.
             future (bool, optional): Whether to use SQLAlchemy 2.0-style engine semantics. Defaults to True.
         """
+        LOGGER.debug("Initializing SqlManager")
+
         self.engine: Engine = create_engine(db_name, future=future)
 
         # FKs are not enable by default in SQLite
@@ -45,6 +47,8 @@ class SqlManager:
             bind=self.engine, future=True, expire_on_commit=False
         )
         self._create_table()
+
+        LOGGER.debug("Successfully Initialized SqlManager!")
 
     def _create_table(self) -> None:
         """Creates all tables `IF NOT EXIST` define in `models.py`"""
@@ -59,13 +63,16 @@ class SqlManager:
         """
         curr_session = self.session()
         try:
+            LOGGER.debug("Yielding DB Session")
             yield curr_session
             curr_session.commit()
         except Exception:
             curr_session.rollback()
+            LOGGER.error("Session dispatched an exception!")
             raise
         finally:
             curr_session.close()
+            LOGGER.debug("Successfully closed Session!")
 
     def query(
         self,
@@ -87,7 +94,14 @@ class SqlManager:
         """
         with self.get_session() as s:
             q = s.query(model).filter_by(**params)
-            return q.one_or_none() if single else q.all()
+            res = q.one_or_none() if single else q.all()
+            LOGGER.info(
+                "Query model=[%s] with params=[%s] result=[%s]",
+                model.__name__,
+                params,
+                res,
+            )
+            return res
 
     def insert(self, objs: T | list[T]) -> T | list[T]:
         """Inserts objects in to the database.
@@ -104,6 +118,7 @@ class SqlManager:
             else:
                 s.add(objs)
             s.flush()
+            LOGGER.info("Inserted objects=[%s] into DB", objs)
             return objs
 
     def update(self, model: Type[T], ident: int, **updates: Any) -> T:
@@ -124,6 +139,11 @@ class SqlManager:
             entry = s.get(model, ident)
 
             if entry is None:
+
+                LOGGER.error(
+                    "Update [Error] on model=[%s] ident=[%s]", model.__name__, ident
+                )
+
                 raise ModelNotFoundError(
                     f"model=[{model.__name__}] with ident=[{ident}] not found."
                 )
@@ -132,6 +152,13 @@ class SqlManager:
                 setattr(entry, field, value)
 
             s.flush()
+
+            LOGGER.info(
+                "Successfully Updated model=[%s] with fields_update=[%s]",
+                model.__name__,
+                updates,
+            )
+
             return entry
 
     def delete(self, model: Type[T], **params: Any) -> None:
@@ -144,3 +171,6 @@ class SqlManager:
         with self.get_session() as s:
             s.query(model).filter_by(**params).delete()
             s.flush()
+            LOGGER.info(
+                "Deleted all model=[%s] with params=[%s]", model.__name__, params
+            )
