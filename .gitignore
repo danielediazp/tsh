@@ -1,0 +1,21 @@
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Python bytecode
+__pycache__/
+**/__pycache__/
+
+# Ignore setuptools-generated metadata
+*.egg-info/
+tsh.egg-info/
+logs.txt
+
+# Ignore general Python artifacts
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.env
+.env
+.venv/

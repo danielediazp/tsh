@@ -1,0 +1,16 @@
+[project]
+name = "tsh"
+version = "0.1.0"
+description = "Task Shell is a highly customizable interactive shell for to-dos."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+{ name = "Daniel Diaz", email = "danieldiaz041100@gmail.com" },
+]
+dependencies = [
+    "keyboard>=0.13.5",
+    "pytest>=8.3.5",
+    "readchar>=4.2.1",
+    "rich>=14.0.0",
+    "sqlalchemy>=2.0.40",
+]
