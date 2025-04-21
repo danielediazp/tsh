@@ -21,6 +21,9 @@ class SqlManager:
         __init__
         get_session
         query
+        insert
+        update
+        delete
     """
 
     def __init__(self, db_name: str, future: bool = True):
