@@ -25,7 +25,11 @@ def main():
         time.sleep(100)
     except KeyboardInterrupt:
         csl.clear()
-        csl.print(csl_str_factory("Program interrupted.", CslStrStyleAttribute.BOLD, ColorIndex(1)))
+        csl.print(
+            csl_str_factory(
+                "Program interrupted.", CslStrStyleAttribute.BOLD, ColorIndex(1)
+            )
+        )
 
     LOGGER.info("Program done executing!")
 

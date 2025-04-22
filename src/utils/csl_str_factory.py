@@ -85,7 +85,7 @@ def csl_str_factory(
 
     if color is not None:
         if not isinstance(color, ColorIndex):
-            raise NotSupportedStyleAttribute(f"Only valid ColorIndex are supported")
+            raise NotSupportedStyleAttribute("Only valid ColorIndex are supported")
 
         style.append(str(color))
 
