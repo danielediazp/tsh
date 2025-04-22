@@ -43,8 +43,11 @@ class SqlManager:
         def _enable_fks(dbapi_conn, _):
             dbapi_conn.execute("PRAGMA foreign_keys=ON")
 
-        self.session: sessionmaker[Session] = sessionmaker(
-            bind=self.engine, future=True, expire_on_commit=False
+        self.SessionLocal: sessionmaker[Session] = sessionmaker(
+            bind=self.engine,
+            future=True,
+            expire_on_commit=False,
+            autoflush=True,
         )
         self._create_table()
 
@@ -61,7 +64,7 @@ class SqlManager:
         Yields:
             A SQLAlchemy Session that is committed on success and, rollback on exception, and always closed.
         """
-        curr_session = self.session()
+        curr_session = self.SessionLocal()
         try:
             LOGGER.debug("Yielding DB Session")
             yield curr_session
@@ -117,7 +120,6 @@ class SqlManager:
                 s.add_all(objs)
             else:
                 s.add(objs)
-            s.flush()
             LOGGER.info("Inserted objects=[%s] into DB", objs)
             return objs
 
@@ -151,8 +153,6 @@ class SqlManager:
             for field, value in updates.items():
                 setattr(entry, field, value)
 
-            s.flush()
-
             LOGGER.info(
                 "Successfully Updated model=[%s] with fields_update=[%s]",
                 model.__name__,
@@ -170,7 +170,6 @@ class SqlManager:
         """
         with self.get_session() as s:
             s.query(model).filter_by(**params).delete()
-            s.flush()
             LOGGER.info(
                 "Deleted all model=[%s] with params=[%s]", model.__name__, params
             )

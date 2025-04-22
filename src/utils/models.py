@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import as_declarative, declared_attr, relationship
 
@@ -42,7 +42,9 @@ class Task(Base):
     title = Column(String, nullable=False)
     description = Column(String)
     creation_datetime = Column(
-        DateTime(timezone=False), default=datetime.utcnow, nullable=False
+        DateTime(timezone=False),
+        default=datetime.now(timezone.utc).replace(tzinfo=None),
+        nullable=False,
     )
 
     completed = relationship("CompletedTask", back_populates="task", lazy="joined")
@@ -63,7 +65,10 @@ class CompletedTask(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     completed_datetime = Column(
-        DateTime(timezone=False), default=datetime.utcnow, nullable=False, index=True
+        DateTime(timezone=False),
+        default=datetime.now(timezone.utc).replace(tzinfo=None),
+        nullable=False,
+        index=True,
     )
     task_id = Column(Integer, ForeignKey("task.id", ondelete="CASCADE"), nullable=False)
 
