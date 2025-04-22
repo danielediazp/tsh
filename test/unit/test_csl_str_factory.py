@@ -1,6 +1,6 @@
 import pytest
 
-from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute
+from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
 from exceptions import NotSupportedStyleAttribute
 
 @pytest.fixture(scope="session")
@@ -41,3 +41,8 @@ def test_not_supported_attributes_in_list_error():
         csl_str_factory(text=text, style_attr=styles)
     
     assert str(e.value) == f"styles {styles} are not supported"
+
+def test_valid_color_index_ok():
+    color = ColorIndex(1)
+    text = "Hello, World!"
+    assert csl_str_factory(text, color=color) == f"[{color}]{text}[/{color}]"

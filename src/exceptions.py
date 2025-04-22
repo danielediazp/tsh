@@ -12,3 +12,12 @@ class ModelNotFoundError(Exception):
     """
 
     pass
+
+
+class InvalidColorIndex(Exception):
+    """
+    Custom exception for invalid color Index. ColorIndex val must be
+    between 1 and 255.
+    """
+
+    pass

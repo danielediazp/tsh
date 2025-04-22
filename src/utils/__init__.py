@@ -1,5 +1,5 @@
 from .decorators import singleton
-from .csl_str_factory import CslStrStyleAttribute, csl_str_factory
+from .csl_str_factory import CslStrStyleAttribute, csl_str_factory, ColorIndex
 from .models import Task, CompletedTask, Base
 
 __all__ = [
@@ -9,4 +9,5 @@ __all__ = [
     "Task",
     "CompletedTask",
     "Base",
+    "ColorIndex",
 ]

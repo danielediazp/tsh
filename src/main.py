@@ -1,8 +1,10 @@
 import logging
 
 from rich.console import Console
+import time
 
 from app import Menu
+from utils import csl_str_factory, CslStrStyleAttribute, ColorIndex
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -20,9 +22,10 @@ def main():
         csl = Console()
         m = Menu(csl)
         m.run()
+        time.sleep(100)
     except KeyboardInterrupt:
         csl.clear()
-        csl.print("[bold red]Program interrupted.[/bold red]")
+        csl.print(csl_str_factory("Program interrupted.", CslStrStyleAttribute.BOLD, ColorIndex(1)))
 
     LOGGER.info("Program done executing!")
 
