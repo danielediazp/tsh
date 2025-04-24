@@ -1,7 +1,7 @@
 import pytest
 
 from utils.sql import SqlManager
-from utils.models import Task, CompletedTask
+from utils.models import Task, History
 
 
 TEST_DB = "sqlite:///:memory:"
@@ -17,7 +17,7 @@ def sql_manager():
 def drop_tables(sql_manager: SqlManager):
     with sql_manager.get_session() as session:
         session.query(Task).delete()
-        session.query(CompletedTask).delete()
+        session.query(History).delete()
 
 
 @pytest.fixture

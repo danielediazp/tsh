@@ -2,7 +2,7 @@ import pytest
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.models import Task
+from utils.models import Task, TaskStatus
 
 
 def test_insert_task_model_with_description(clean_db):
@@ -19,7 +19,11 @@ def test_insert_task_model_with_description(clean_db):
     assert row.id == 1
     assert row.title == title
     assert row.description == description
-    assert row.creation_datetime
+    assert row.created_at is not None
+    assert row.completed_at is None
+    assert not row.is_deleted
+    assert row.status == TaskStatus.ACTIVE
+    assert not len(row.history)
 
 
 def test_task_unique_ids(clean_db, dummy_task):
@@ -35,8 +39,10 @@ def test_task_unique_ids(clean_db, dummy_task):
 
 def test_insert_task_duplicates_with(clean_db):
     # GIVEN
-    t1 = Task(title="some")
-    t2 = Task(title="some2")
+    title1 = "some"
+    title2 = "some2"
+    t1 = Task(title=title1)
+    t2 = Task(title=title2)
 
     # WHEN
     clean_db.insert([t1, t2])  # we allow for duplicates task by default
@@ -45,4 +51,8 @@ def test_insert_task_duplicates_with(clean_db):
     rows = clean_db.query(Task)
     assert len(rows) == 2
     assert [entry.id for entry in rows] == [1, 2]
-    assert all(entry.creation_datetime is not None for entry in rows)
+    assert [entry.title for entry in rows] == [title1, title2]
+    assert all(entry.created_at is not None for entry in rows)
+    assert all(entry.completed_at is None for entry in rows)
+    assert all(entry.status == TaskStatus.ACTIVE for entry in rows)
+    assert all(not entry.is_deleted for entry in rows)

@@ -56,6 +56,7 @@ def csl_str_factory(
     Args:
         text (str): the text to apply the format to
         style_attr (CslStrStyleAttribute | list[CslStrStyleAttribute]): the format that will be apply to the text
+        color (ColorIndex | Optional): The color of the text. Defaults to None.
 
     Returns:
         str: in the format `[style_attr] text [/style_attr]`

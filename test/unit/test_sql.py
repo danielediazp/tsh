@@ -2,14 +2,14 @@ import pytest
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from utils.models import Task, CompletedTask
+from utils.models import Task, History, TaskStatus
 from utils.sql import SqlManager
 
 
 def test_sql_manager(clean_db: SqlManager):
     # All rows should be empty
     assert clean_db.query(Task) == []
-    assert clean_db.query(CompletedTask) == []
+    assert clean_db.query(History) == []
 
 
 def test_sql_manager_insert_single_element(clean_db):
@@ -24,7 +24,12 @@ def test_sql_manager_insert_single_element(clean_db):
     row = clean_db.query(Task, single=True)
     assert row.title == title
     assert row.id == 1
-    assert row.creation_datetime
+    assert row.description is None
+    assert row.created_at is not None
+    assert row.completed_at is None
+    assert not row.is_deleted
+    assert row.status == TaskStatus.ACTIVE
+    assert not len(row.history)
 
 
 def test_psql_manager_insert_list_same_element(clean_db):
@@ -40,16 +45,19 @@ def test_psql_manager_insert_list_same_element(clean_db):
     rows = clean_db.query(Task)
     assert [entry.id for entry in rows] == [1, 2]
     assert [entry.title for entry in rows] == [title1, title2]
-    assert all(entry.creation_datetime is not None for entry in rows)
+    assert all(entry.created_at is not None for entry in rows)
+    assert all(entry.completed_at is None for entry in rows)
+    assert all(entry.status == TaskStatus.ACTIVE for entry in rows)
+    assert all(not entry.is_deleted for entry in rows)
 
 
 def test_sql_manager_exception_raise(clean_db):
     # GIVEN
-    ctsk = CompletedTask(task_id=1)  # Should fail task_id if a Fk
+    hist = History(task_id=1)  # Should fail task_id if a Fk
 
     # WHEN / THEN
     with pytest.raises(SQLAlchemyError) as e:
-        clean_db.insert(ctsk)
+        clean_db.insert(hist)
 
 
 def test_sql_manager_update(clean_db, dummy_task):
@@ -64,6 +72,11 @@ def test_sql_manager_update(clean_db, dummy_task):
     assert row.title == dummy_task.title
     assert row.description != dummy_task.description
     assert row.description == new_desc
+    assert row.created_at is not None
+    assert row.completed_at is None
+    assert not row.is_deleted
+    assert row.status == TaskStatus.ACTIVE
+    assert not len(row.history)
 
 
 def test_sql_manager_delete_one_entry(clean_db, dummy_task):
