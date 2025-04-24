@@ -7,7 +7,6 @@ __all__ = [
     "CslStrStyleAttribute",
     "csl_str_factory",
     "Task",
-    "History"
-    "Base",
+    "History" "Base",
     "ColorIndex",
 ]
