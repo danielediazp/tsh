@@ -20,7 +20,7 @@ def singleton(cls: type) -> type:
             LOGGER.info(f"Successfully created singleton instances of {cls.__name__}")
         else:
             LOGGER.warning(
-                f"Attempted to create second instance of singleton {cls.__name__}, returning existing one"
+                f"returning existing instance of singleton {cls.__name__}"
             )
         return instances[cls]
 

@@ -3,7 +3,7 @@ import logging
 from rich.console import Console
 import time
 
-from app import Menu
+from app import Tsh
 from utils import csl_str_factory, CslStrStyleAttribute, ColorIndex
 
 logging.basicConfig(
@@ -20,8 +20,7 @@ def main():
 
     try:
         csl = Console()
-        m = Menu(csl)
-        m.run()
+        Tsh(csl=csl)
         time.sleep(100)
     except KeyboardInterrupt:
         csl.clear()

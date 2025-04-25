@@ -21,3 +21,12 @@ class InvalidColorIndex(Exception):
     """
 
     pass
+
+
+class InvalidStateTransition(Exception):
+    """
+    Custom Exception for Invalid state transition. Raised any time the transition
+    between `App` state is invalid.
+    """
+
+    pass
