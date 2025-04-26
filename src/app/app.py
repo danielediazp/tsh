@@ -4,8 +4,8 @@ from typing import Any
 
 from rich.console import Console
 
-from utils import singleton
-from app import Menu
+from utils.decorators import singleton
+from app.menu import Menu
 from exceptions import InvalidStateTransition
 
 

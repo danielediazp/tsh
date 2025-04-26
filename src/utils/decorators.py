@@ -19,9 +19,7 @@ def singleton(cls: type) -> type:
             cls.__init__(instances[cls], *args, **kwargs)
             LOGGER.info(f"Successfully created singleton instances of {cls.__name__}")
         else:
-            LOGGER.warning(
-                f"returning existing instance of singleton {cls.__name__}"
-            )
+            LOGGER.warning(f"returning existing instance of singleton {cls.__name__}")
         return instances[cls]
 
     return get_instance  # replaces the class with our factory

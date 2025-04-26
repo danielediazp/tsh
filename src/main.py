@@ -3,8 +3,8 @@ import logging
 from rich.console import Console
 import time
 
-from app import Tsh
-from utils import csl_str_factory, CslStrStyleAttribute, ColorIndex
+from app.app import Tsh
+from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
 
 logging.basicConfig(
     level=logging.DEBUG,

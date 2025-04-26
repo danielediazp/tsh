@@ -1,4 +1,4 @@
-from utils.models import Task, History, TaskStatus
+from utils.models import Task, History
 
 
 def test_history_relation_on_insert(clean_db, dummy_task):
