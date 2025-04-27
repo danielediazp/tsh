@@ -18,13 +18,13 @@ DESC = "Description"
 TITLE_INPUT_HOLDER = csl_str_factory("Enter title...", CslStrStyleAttribute.ITALIC)
 DESC_INPUT_HOLDER = csl_str_factory("Enter description...", CslStrStyleAttribute.ITALIC)
 BLINKER = csl_str_factory("|", CslStrStyleAttribute.BOLD, ColorIndex(2))
-VIEW_EDIT_FORM_HEADER = csl_str_factory("VIEW/EDIT Form", CslStrStyleAttribute.BOLD, ColorIndex(5))
+VIEW_EDIT_FORM_HEADER = csl_str_factory(
+    "VIEW/EDIT Form", CslStrStyleAttribute.BOLD, ColorIndex(5)
+)
 ADD_FORM_HEADER = csl_str_factory("ADD Form", CslStrStyleAttribute.BOLD, ColorIndex(5))
 
 
 class TaskForm:
-    """A form for collecting user information with Title and Description fields."""
-
     def __init__(self, csl: Console, back: callable, some_task: Task = None):
         # Handle app state interactions
         self.back: callable = back
@@ -62,7 +62,7 @@ class TaskForm:
             return f"{VIEW_EDIT_FORM_HEADER} Created at: {self._created_at}"
         else:
             return ADD_FORM_HEADER
-        
+
     def _render_form(self) -> Group:
         """Builds and returns the rendered form as a Rich Group.
 

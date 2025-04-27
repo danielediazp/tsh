@@ -27,7 +27,13 @@ MENU_INSTRUCTIONS = (
 
 class Menu:
 
-    def __init__(self, csl: Console, fetch_data: callable, back: callable, add_new_state: callable):
+    def __init__(
+        self,
+        csl: Console,
+        fetch_data: callable,
+        back: callable,
+        add_new_state: callable,
+    ):
         self.csl: Console = csl
 
         # Interactions
@@ -223,6 +229,8 @@ class Menu:
             self._display_menu()
             if self._selected_option:
                 self.csl.clear()
-                self.add_new_state(TaskForm(self.csl, self.back, self._items[self._selected_option]))
+                self.add_new_state(
+                    TaskForm(self.csl, self.back, self._items[self._selected_option])
+                )
             else:
                 self.csl.clear()
