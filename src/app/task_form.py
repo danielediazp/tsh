@@ -21,9 +21,18 @@ TITLE_INPUT_HOLDER = csl_str_factory("Enter title...", CslStrStyleAttribute.ITAL
 DESC_INPUT_HOLDER = csl_str_factory("Enter description...", CslStrStyleAttribute.ITALIC)
 BLINKER = csl_str_factory("|", CslStrStyleAttribute.BOLD, ColorIndex(2))
 VIEW_EDIT_FORM_HEADER = csl_str_factory(
-    "VIEW/EDIT Form", CslStrStyleAttribute.BOLD, ColorIndex(5)
+    "VIEW/EDIT Task Form", CslStrStyleAttribute.BOLD, ColorIndex(5)
 )
 ADD_FORM_HEADER = csl_str_factory("ADD Form", CslStrStyleAttribute.BOLD, ColorIndex(5))
+INSTRUCTIONS = Text.from_markup(
+    "[bold]Instructions:[/bold]\n"
+    "- Start typing to enter or edit text into the current field.\n"
+    "- Use [bold]Left[/bold] and [bold]Right[/bold] arrows to move the cursor within the field.\n"
+    "- Use [bold]Up[/bold] and [bold]Down[/bold] arrows to switch between the [bold]Title[/bold] and [bold]Description[/bold] fields.\n"
+    "- Press [bold]Backspace[/bold] to delete characters.\n"
+    "- [bold]Enter[/bold] to move to the next action",
+    style="dim",
+)
 
 
 class TaskForm:
@@ -90,7 +99,9 @@ class TaskForm:
             str: The header of the string.
         """
         if self.task is not None:
-            return f"{VIEW_EDIT_FORM_HEADER} Created at: {self._created_at}"
+            return f"""{VIEW_EDIT_FORM_HEADER} 
+Task Created at: {self._created_at}
+"""  # DO not modify Python String will Render tabs
         else:
             return ADD_FORM_HEADER
 
@@ -114,19 +125,7 @@ class TaskForm:
         title_panel = self._build_field_panel(title_content, TITLE, 0)
         desc_panel = self._build_field_panel(desc_content, DESC, 1)
 
-        # instructions = Text(
-        #     "Type to add characters. Use [bold]Backspace[/bold] to delete. Use [bold]Up[/bold] and [bold]Down[/bold] arrows to change field.\n"
-        #     "Use [bold]Left[/bold] and [bold]Right[/bold] arrows to move within the field.\n"
-        #     "In the Title field, press [bold]Enter[/bold] to move to Description; in the Description field, press [bold]Enter[/bold] to submit.",
-        #     style="dim"
-        # )
-
-        return Group(
-            header,
-            title_panel,
-            desc_panel,
-            # instructions
-        )
+        return Group(header, title_panel, desc_panel, INSTRUCTIONS)
 
     def _build_field_panel(self, content: str, title: str, field_index: int) -> Panel:
         """Helper method to build the field panel with proper highlighting.
