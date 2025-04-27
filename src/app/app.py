@@ -5,8 +5,18 @@ from typing import Any
 from rich.console import Console
 
 from utils.decorators import singleton
+from utils.models import Task
 from app.menu import Menu
 from exceptions import InvalidStateTransition
+
+
+# TODO: Get rid of this, this is a func for UI testing purposes.
+def fetch_task_data():
+    """
+    A sample function that fetches data from the database and returns a list of Task objects.
+    """
+    tasks = [Task(id=i, title=f"Task {i}") for i in range(25)]
+    return tasks
 
 
 @singleton
@@ -25,7 +35,7 @@ class Tsh:
 
     def __post_init__(self):
         """Initialized the Tsh first state."""
-        self.add_new_state(Menu(self.csl))
+        self.add_new_state(Menu(self.csl, fetch_task_data, self.exit))
 
     def back(self) -> None:
         """Removes the current state and renders the previous state. This works as a transition
