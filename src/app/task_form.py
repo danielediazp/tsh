@@ -2,6 +2,8 @@ from threading import Event, Thread
 import time
 import json
 import readchar
+from collections.abc import Callable
+
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
@@ -25,9 +27,38 @@ ADD_FORM_HEADER = csl_str_factory("ADD Form", CslStrStyleAttribute.BOLD, ColorIn
 
 
 class TaskForm:
-    def __init__(self, csl: Console, back: callable, some_task: Task = None):
+    """Interactive form for creating or editing a task within the Task Shell CLI.
+
+    This class provides a terminal-based form interface for users to input or modify
+    a task's title and description. It handles user input for navigating between fields,
+    editing text, and submitting the form, all rendered using the Rich library.
+
+    The form supports:
+        - Editing an existing task or creating a new one.
+        - Real-time updates to the form fields with cursor positioning.
+        - Navigation between fields via keyboard controls (up/down, left/right, backspace, enter).
+
+    Args:
+        csl (Console): Rich console instance used for rendering the form.
+        back (Callable[[], None]): A callable to navigate back to the previous application state.
+        some_task (Task, optional): The task to edit. If None, the form initializes in creation mode.
+
+    Attributes:
+        back (Callable[[], None]): Function to transition back to the previous view.
+        csl (Console): Console instance for rendering.
+        task (Task | None): The task being edited (or None if creating a new task).
+        _created_at (str | None): Formatted creation date of the task (if editing).
+        current_field (int): Index of the currently selected field (0 for title, 1 for description).
+        fields (list[str]): Holds the content of the form fields.
+        cursor_pos (list[int]): Tracks the cursor position within each field.
+        selection_event (Event): Signals when the form is ready for submission.
+    """
+
+    def __init__(
+        self, csl: Console, back: Callable[[None], None], some_task: Task = None
+    ):
         # Handle app state interactions
-        self.back: callable = back
+        self.back: Callable[[None], None] = back
 
         self.csl: Console = csl
 
@@ -130,9 +161,10 @@ class TaskForm:
         return f"{text_before_cursor}{BLINKER}{text_after_cursor}"
 
     def _key_listener(self):
-        """Listen for key input and update the form state.
+        """Listen for keyboard inputs and update form state.
 
-        This method handles key presses for navigating the fields, typing, and deleting characters.
+        Handles navigation between fields, cursor movement, text editing,
+        and form submission triggers.
         """
         while not self.selection_event.is_set():
             key = readchar.readkey()
@@ -205,7 +237,11 @@ class TaskForm:
         self.back()
 
     def run(self):
-        """Main execution method for the form."""
+        """Main execution method for the form.
+
+        Starts the key listener, renders the form, clears the console on completion,
+        and triggers form submission.
+        """
         self._start_key_listener()
         self._display_form()
         self.csl.clear()

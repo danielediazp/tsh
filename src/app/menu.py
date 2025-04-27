@@ -2,6 +2,9 @@ import logging
 from collections import OrderedDict
 from threading import Event, Thread
 import time
+from abc import ABC, abstractmethod
+from typing import Any
+from collections.abc import Callable
 
 import readchar
 from rich.console import Console
@@ -9,7 +12,8 @@ from rich.live import Live
 from rich.text import Text
 
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
-from utils.constant import PAGER_TOP, PAGER_BOTTOM, ENTER, UP_K, DOWN_K, ENTER_K
+from utils.constant import PAGER_TOP, PAGER_BOTTOM, ENTER, UP_K, DOWN_K, ENTER_K, BACK_K
+from utils.models import Task
 from .task_form import TaskForm
 
 LOGGER = logging.getLogger(__name__)
@@ -25,25 +29,39 @@ MENU_INSTRUCTIONS = (
 )
 
 
-class Menu:
+class Menu(ABC):
+    """Abstract base class for interactive terminal menus.
+
+    This class provides the core logic for displaying a paginated, navigable menu in a terminal
+    using the Rich library. It handles user interactions such as keyboard input (arrow keys,
+    enter, slash commands) and maintains selection state, pagination, and error handling.
+
+    Subclasses are required to:
+        - Load and populate menu items via `load_data`.
+        - Define how each item should be displayed via `get_menu_option_str`.
+        - Implement the logic for handling the selected option via `handle_selected_option`.
+
+    Attributes:
+        csl (Console): Rich console instance for rendering the menu.
+        _items (OrderedDict): The ordered set of menu items (key-value pairs).
+        _selected_option (int | None): The currently selected item key.
+        _selected_idx (int): The index of the selected item in the ordered list.
+        _event (Event): Threading event to control user input and menu rendering.
+        _window_start (int): The index of the first item in the current paginated window.
+        _page_size (int): Number of items to display per page (default is 10).
+        _slash_mode_on (bool): Indicates whether the user is in slash input mode.
+        _slash_input (str): The current input buffer for slash mode.
+        _error_message (str | None): Error message to display (if any).
+    """
 
     def __init__(
         self,
         csl: Console,
-        fetch_data: callable,
-        back: callable,
-        add_new_state: callable,
     ):
         self.csl: Console = csl
 
-        # Interactions
-        self.back: callable = back
-
         # User Data
         self._items: OrderedDict = OrderedDict()
-        self.fetch_data: callable = fetch_data
-        self.add_new_state: callable = add_new_state
-        # self.delete_item_by_id: callable = delete_item_by_id
 
         # Screen interactions handler attributes
         self._selected_option: int | None = None
@@ -55,11 +73,31 @@ class Menu:
         self._slash_input: str = ""
         self._error_message: str | None = None
 
-        self._load_data()
+        self.load_data()
 
-    def _load_data(self):
-        items = self.fetch_data()
-        self._items = OrderedDict({item.id: item for item in items})
+    @abstractmethod
+    def load_data(self) -> None:
+        """Load and populate the menu items.
+
+        This method must be implemented by subclasses to populate the `_items` attribute
+        with the appropriate data. `_items` should be an `OrderedDict` where keys are
+        unique identifiers, and values are the data associated with each menu option.
+        """
+        pass
+
+    @abstractmethod
+    def get_menu_option_str(self, item: Any) -> str:
+        """Return the string representation for a given menu item.
+
+        This method defines how each item should be displayed in the menu.
+
+        Args:
+            item (Any): The data associated with a menu option.
+
+        Returns:
+            str: The formatted string to display for the given item.
+        """
+        pass
 
     def _update_window(self) -> None:
         """
@@ -100,17 +138,18 @@ class Menu:
 
         for i in range(self._window_start, window_end):
             item = options[i][1]
+            title = self.get_menu_option_str(item)
             if self._selected_idx == i:
                 arrow = "→ " if show_arrow else "  "
                 lines.append(
                     csl_str_factory(
-                        f"{arrow} [{i + 1}] {item.title}",
+                        f"{arrow} [{i + 1}] {title}",
                         CslStrStyleAttribute.BOLD,
                         ColorIndex(11),
                     )
                 )
             else:
-                lines.append(f"   [{i + 1}] {item.title}")
+                lines.append(f"   [{i + 1}] {title}")
 
         if window_end < len(self._items):
             lines.append(PAGER_BOTTOM)
@@ -194,7 +233,7 @@ class Menu:
                             self._selected_idx = choice_idx
                             self._event.set()
                     self._slash_mode_on = False
-                elif key in ("\x7f", "\b"):  # Backspace
+                elif key in BACK_K:  # Backspace
                     self._slash_input = self._slash_input[:-1]
                 elif key.isprintable():
                     self._slash_input += key
@@ -222,6 +261,18 @@ class Menu:
         listener.join(timeout=0.1)
         self.csl.clear()
 
+    @abstractmethod
+    def handle_selected_option(self, selected_option: Any):
+        """Handle the logic when a menu option is selected.
+
+        This method is triggered when the user confirms a selection. It must be
+        implemented by subclasses to define the action taken for the selected item.
+
+        Args:
+            selected_option (Any): The data associated with the selected menu option.
+        """
+        pass
+
     def run(self) -> None:
         # TODO: Open description tab
         # MENU -> user select valid option -> task description tab
@@ -229,8 +280,72 @@ class Menu:
             self._display_menu()
             if self._selected_option:
                 self.csl.clear()
-                self.add_new_state(
-                    TaskForm(self.csl, self.back, self._items[self._selected_option])
-                )
+                self.handle_selected_option(self._items[self._selected_option])
             else:
                 self.csl.clear()
+
+
+class MainMenu(Menu):
+    """Main menu for displaying and interacting with a list of tasks.
+
+    This class extends the `Menu` base class, providing concrete implementations
+    for loading tasks, rendering their display strings, and handling task selection.
+
+    The menu supports navigating through tasks, selecting a task to view or edit,
+    and integrating with an application state manager for transitioning between views.
+
+    Args:
+        csl (Console): Rich console instance used for rendering the menu.
+        fetch_data (Callable[[], list[Task]]): A callable that retrieves the list of tasks to display.
+        back (Callable[[], None]): A callable that navigates back to the previous menu state.
+        add_new_state (Callable[[Any], None]): A callable that pushes a new state (e.g., a task form)
+            onto the application state manager stack.
+
+    Attributes:
+        fetch_data (Callable[[], list[Task]]): Retrieves the current list of tasks.
+        back (Callable[[], None]): Navigates back to the previous state.
+        add_new_state (Callable[[Any], None]): Adds a new state to the application stack.
+    """
+
+    def __init__(
+        self,
+        csl: Console,
+        fetch_data: Callable[[None], list[Task]],
+        back: Callable[[None], None],
+        add_new_state: Callable[[None], None],
+    ):
+        self.fetch_data = fetch_data
+        self.back = back
+        self.add_new_state = add_new_state
+        super().__init__(csl)
+
+    def load_data(self) -> None:
+        """Load the list of tasks into the menu.
+
+        Fetches tasks using the `fetch_data` callable and populates the `_items`
+        attribute with task IDs as keys and `Task` objects as values.
+        """
+        items: list[Task] = self.fetch_data()
+        self._items = OrderedDict({item.id: item for item in items})
+
+    def get_menu_option_str(self, item: Task) -> str:
+        """Get the string representation of a task for menu display.
+
+        Args:
+            item (Task): The task object to display.
+
+        Returns:
+            str: The task title to render in the menu.
+        """
+        return item.title
+
+    def handle_selected_option(self, selected_option: Task) -> None:
+        """Handle logic for when a task is selected from the menu.
+
+        When a user selects a task, this method transitions to the `TaskForm`
+        view for that task by adding it as a new state.
+
+        Args:
+            selected_option (Task): The selected task object.
+        """
+        self.add_new_state(TaskForm(self.csl, self.back, selected_option))

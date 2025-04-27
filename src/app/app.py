@@ -6,7 +6,7 @@ from rich.console import Console
 
 from utils.decorators import singleton
 from utils.models import Task
-from app.menu import Menu
+from app.menu import MainMenu
 from exceptions import InvalidStateTransition
 
 
@@ -27,12 +27,22 @@ def fetch_task_data():
 @singleton
 @dataclass
 class Tsh:
-    """Singleton instance class used to represent the Task Shell CLI tool.
-    This manages the transition between all the application states.
+    """Singleton class representing the Task Shell (Tsh) CLI application.
 
-    Defines:
-        back
-        add_new_state
+    This class manages the lifecycle and transitions between different application states
+    (e.g., menus, forms) within the Task Shell CLI. It maintains a stack-based state manager
+    to handle navigation, ensuring smooth transitions between views.
+
+    Upon initialization, the `MainMenu` is loaded as the initial state.
+
+    Attributes:
+        csl (Console): Rich console instance used for rendering content.
+        state_manager (list[Any]): Stack of application states. Each state is expected to implement a `run()` method.
+
+    Methods:
+        back(): Transition back to the previous state.
+        add_new_state(state): Push a new state onto the stack and render it.
+        exit(): Exit the application gracefully.
     """
 
     csl: Console
@@ -41,7 +51,7 @@ class Tsh:
     def __post_init__(self):
         """Initialized the Tsh first state."""
         self.add_new_state(
-            Menu(
+            MainMenu(
                 csl=self.csl,
                 fetch_data=fetch_task_data,
                 back=self.back,
@@ -50,11 +60,13 @@ class Tsh:
         )
 
     def back(self) -> None:
-        """Removes the current state and renders the previous state. This works as a transition
-        back to previous console screen being display.
+        """Transition back to the previous state in the state manager.
+
+        Pops the current state from the stack and runs the previous state.
+        Ensures the user can navigate backward in the application.
 
         Raises:
-            InvalidStateTransition: If there's not previous state to transition to.
+            InvalidStateTransition: If there is no previous state to transition to.
         """
         try:
             self.state_manager.pop()
@@ -63,11 +75,13 @@ class Tsh:
             raise InvalidStateTransition
 
     def add_new_state(self, state: Any) -> None:
-        """Add's new state to the Tsh and renders its content in the console. This servers as a transition
-        from the current window to a new one.
+        """Push a new state onto the state manager stack and render it.
+
+        This method transitions the application to a new view by adding the provided
+        state object (which must implement a `run()` method) and invoking it.
 
         Args:
-            state (Any): An object that must implement the run method to display content in the console.
+            state (Any): The new application state. Must implement a `run()` method for rendering.
         """
         self.state_manager.append(state)
         self.state_manager[-1].run()
