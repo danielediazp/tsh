@@ -10,6 +10,7 @@ from rich.text import Text
 
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
 from utils.constant import PAGER_TOP, PAGER_BOTTOM, ENTER, UP_K, DOWN_K, ENTER_K
+from .task_form import TaskForm
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ MENU_INSTRUCTIONS = (
 
 class Menu:
 
-    def __init__(self, csl: Console, fetch_data: callable, back: callable):
+    def __init__(self, csl: Console, fetch_data: callable, back: callable, add_new_state: callable):
         self.csl: Console = csl
 
         # Interactions
@@ -35,6 +36,7 @@ class Menu:
         # User Data
         self._items: OrderedDict = OrderedDict()
         self.fetch_data: callable = fetch_data
+        self.add_new_state: callable = add_new_state
         # self.delete_item_by_id: callable = delete_item_by_id
 
         # Screen interactions handler attributes
@@ -51,7 +53,7 @@ class Menu:
 
     def _load_data(self):
         items = self.fetch_data()
-        self._items = OrderedDict({item.id: item.title for item in items})
+        self._items = OrderedDict({item.id: item for item in items})
 
     def _update_window(self) -> None:
         """
@@ -91,18 +93,18 @@ class Menu:
             lines.append(PAGER_TOP)
 
         for i in range(self._window_start, window_end):
-            task = options[i][1]
+            item = options[i][1]
             if self._selected_idx == i:
                 arrow = "→ " if show_arrow else "  "
                 lines.append(
                     csl_str_factory(
-                        f"{arrow} [{i + 1}] {task}",
+                        f"{arrow} [{i + 1}] {item.title}",
                         CslStrStyleAttribute.BOLD,
                         ColorIndex(11),
                     )
                 )
             else:
-                lines.append(f"   [{i + 1}] {task}")
+                lines.append(f"   [{i + 1}] {item.title}")
 
         if window_end < len(self._items):
             lines.append(PAGER_BOTTOM)
@@ -221,8 +223,6 @@ class Menu:
             self._display_menu()
             if self._selected_option:
                 self.csl.clear()
-                self.csl.print(
-                    f"[bold green]You chose {self._selected_option}[/bold green]"
-                )
+                self.add_new_state(TaskForm(self.csl, self.back, self._items[self._selected_option]))
             else:
                 self.csl.clear()

@@ -12,3 +12,6 @@ ENTER = (
 UP_K = "\x1b[A"
 DOWN_K = "\x1b[B"
 ENTER_K = ["\r", "\n"]
+RIGHT_K = "\x1b[C"
+LEFT_K = "\x1b[D"
+BACK_K = ("\x7f", "\b")

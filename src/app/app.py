@@ -12,10 +12,11 @@ from exceptions import InvalidStateTransition
 
 # TODO: Get rid of this, this is a func for UI testing purposes.
 def fetch_task_data():
+    from datetime import datetime
     """
     A sample function that fetches data from the database and returns a list of Task objects.
     """
-    tasks = [Task(id=i, title=f"Task {i}") for i in range(25)]
+    tasks = [Task(id=i, title=f"Task {i}", description="some", created_at=datetime.now()) for i in range(25)]
     return tasks
 
 
@@ -35,7 +36,14 @@ class Tsh:
 
     def __post_init__(self):
         """Initialized the Tsh first state."""
-        self.add_new_state(Menu(self.csl, fetch_task_data, self.exit))
+        self.add_new_state(
+            Menu(
+                csl=self.csl,
+                fetch_data=fetch_task_data,
+                back=self.back,
+                add_new_state=self.add_new_state,
+            )
+        )
 
     def back(self) -> None:
         """Removes the current state and renders the previous state. This works as a transition
