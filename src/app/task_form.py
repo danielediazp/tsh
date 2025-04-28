@@ -1,6 +1,5 @@
 from threading import Event, Thread
 import time
-import json
 import readchar
 from collections.abc import Callable
 
@@ -8,7 +7,6 @@ from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.text import Text
-from rich.json import JSON
 
 from utils.models import Task
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
@@ -230,9 +228,6 @@ Task Created at: {self._created_at}
     def submit_form(self):
         """Prepare and print the final JSON output."""
         # TODO: If the title or the description is different from the original update it in the db.
-        data = {"title": self.fields[0], "description": self.fields[1]}
-        json_str = json.dumps(data, indent=4)
-        self.csl.print(JSON(json_str))
         self.back()
 
     def run(self):
