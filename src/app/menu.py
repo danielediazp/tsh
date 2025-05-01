@@ -3,7 +3,7 @@ from collections import OrderedDict
 from threading import Event, Thread
 import time
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, override
 from collections.abc import Callable
 
 import readchar
@@ -31,7 +31,7 @@ MENU_INSTRUCTIONS = (
 )
 
 #TODO: This should be user customizable from the .tshconfig
-ADD_TASK_ACTION = ["a", "add"]
+ADD_ITEM_ACTION = ["a", "add"]
 EXIT_PROG_ACTION = ["e", "exit"]
 
 
@@ -63,6 +63,7 @@ class Menu(ABC):
     def __init__(
         self,
         csl: Console,
+        add_item_enable: bool = False,
     ):
         self.csl: Console = csl
 
@@ -78,7 +79,11 @@ class Menu(ABC):
         self._slash_mode_on: bool = False
         self._slash_input: str = ""
         self._error_message: str | None = None
-        self.exit: bool = False
+        self.add_item_enable = add_item_enable
+        self.add_new_item: bool = False
+        
+        # Flag for the current screen to keep rendering
+        self._exec: bool = True
 
         self.load_data()
 
@@ -180,7 +185,7 @@ class Menu(ABC):
 
         return menu_txt
 
-    def _validate_selection(self, idx: int) -> bool:
+    def _validate_selection(self) -> bool:
         """Check if the user selected a valid task number of the one being display in the screen.
 
         Args:
@@ -189,8 +194,14 @@ class Menu(ABC):
         Returns:
             bool: True if the number represents a valid display on the screen, False otherwise.
         """
+        try: 
+            idx = int(self._slash_input) - 1
+        except ValueError:
+            return False 
+
         if 0 <= idx < len(self.items):
             self._error_message = None
+            self._selected_idx = idx
             return True
 
         self._error_message = csl_str_factory(
@@ -229,25 +240,31 @@ class Menu(ABC):
             else:
                 
                 if key in ENTER_K:  # Enter: attempt to parse
-                    if self._slash_input in ADD_TASK_ACTION:
+                    if self.add_item_enable and self._slash_input in ADD_ITEM_ACTION:
+                        self._selected_option = None
+                        self.add_new_item = True
                         self._event.set()
-                        TshStates.add_new_state(TaskForm(self.csl))
-                        
-                    elif self._slash_input in EXIT_PROG_ACTION:
+                    # handler = self.menu_special_action()
+                    # if handler:
+                    #     self._event.set()
+                    #     self._selected_option = None
+                    #     self.csl.clear()
+                    if self._slash_input in EXIT_PROG_ACTION:
+                        self._selected_option = None
                         self._event.set()
-                        self.exit = True
+                        self._exec = False
 
-                    try:
-                        choice_idx = int(self._slash_input) - 1
-                    except ValueError:
-                        self._error_message = csl_str_factory(
-                            f"The input must be a number within {self._get_menu_range()}",
-                            color=ColorIndex(9),
-                        )
-                    else:
-                        if self._validate_selection(choice_idx):
-                            self._selected_idx = choice_idx
-                            self._event.set()
+                    # try:
+                    #     choice_idx = int(self._slash_input) - 1
+                    # except ValueError:
+                    #     self._error_message = csl_str_factory(
+                    #         f"The input must be a number within {self._get_menu_range()}",
+                    #         color=ColorIndex(9),
+                    #     )
+                    # else:
+                    if self._validate_selection():
+                        self._event.set()
+                        self._selected_option = items[self._selected_idx]
                     self._slash_mode_on = False
                 elif key in BACK_K:  # Backspace
                     self._slash_input = self._slash_input[:-1]
@@ -260,7 +277,7 @@ class Menu(ABC):
         Launches key listener and updates display via Live.
         Returns the selected key.
         """
-        self._selected_option = next(iter(self.items))
+        # self._selected_option = next(iter(self.items))
         self._event.clear()
 
         listener: Thread = Thread(target=self._key_listener, daemon=True)
@@ -278,7 +295,7 @@ class Menu(ABC):
         self.csl.clear()
 
     @abstractmethod
-    def handle_selected_option(self, selected_option: Any):
+    def handle_selected_option(self, selected_option: Any) -> None:
         """Handle the logic when a menu option is selected.
 
         This method is triggered when the user confirms a selection. It must be
@@ -288,19 +305,24 @@ class Menu(ABC):
             selected_option (Any): The data associated with the selected menu option.
         """
         pass
+    
+    @abstractmethod
+    def handle_new_item(self):
+        pass
 
     def run(self) -> None:
         # TODO: Open description tab
         # MENU -> user select valid option -> task description tab
-        while True:
+        while self._exec:
             self._display_menu()
-            if self.exit:
-                TshStates.exit()
-            elif self._selected_option:
-                self.csl.clear()
+            self.csl.clear()
+            if self._selected_option:
                 self.handle_selected_option(self.items[self._selected_option])
-            else:
-                self.csl.clear()
+            elif self.add_item_enable and self.add_new_item:
+                self.add_new_item = False
+                self.handle_new_item()
+
+        TshStates.exit()
 
 @singleton
 class MainMenu(Menu):
@@ -326,7 +348,7 @@ class MainMenu(Menu):
         fetch_data: Callable[[None], list[Task]],
     ):
         self.fetch_data = fetch_data
-        super().__init__(csl)
+        super().__init__(csl, True)
 
     def load_data(self) -> None:
         """Load the list of tasks into the menu.
@@ -357,4 +379,15 @@ class MainMenu(Menu):
         Args:
             selected_option (Task): The selected task object.
         """
-        TshStates.add_new_state(TaskForm(self.csl, selected_option))
+        self._transition_to_task_form(selected_option)
+    
+    def _transition_to_task_form(self, task: Task = None) -> None:
+        """Transition from `MainMenu` to `TaskForm`.
+
+        Args:
+            task (Task, optional): The task to display if VIEW/EDIT mode otherwise None. Defaults to None.
+        """
+        TshStates.add_new_state(TaskForm(self.csl, task))
+    
+    def handle_new_item(self):
+        self._transition_to_task_form()
