@@ -19,8 +19,6 @@ from app.task_form import (
     BLINKER,
     ADD_FORM_HEADER,
     VIEW_EDIT_FORM_HEADER,
-    TITLE_INPUT_HOLDER,
-    DESC_INPUT_HOLDER,
     INSTRUCTIONS,
 )
 
@@ -171,5 +169,34 @@ def test_backspace_and_navigation(console, dummy_live, monkeypatch, task_form_ad
     form.run()
 
     assert form.fields == ["X", "dap"]
+    form.back.assert_called_once()
+    assert console.clear_calls == 1
+
+
+# TODO: Modify this test once DB connection is added. Task requires an title field.
+def test_arrow_navigation_with_no_text(
+    console, dummy_live, monkeypatch, task_form_add_mode
+):
+    """
+    Simulates:
+        - Type arrow down
+        - type error up
+        - type error down
+        - Enter to submit an empty form
+    Check that:
+        - The user can navigate through the form with the arrow keys
+    """
+    monkeypatch.setattr(
+        "app.task_form.Live", dummy_live
+    )  # stub out Live so no real rendering
+
+    seq = [DOWN_K, UP_K, DOWN_K, ENTER_K[0]]
+    key_iter = iter(seq)
+    monkeypatch.setattr("readchar.readkey", lambda: next(key_iter))
+
+    form = task_form_add_mode
+    form.run()
+
+    assert form.fields == ["", ""]
     form.back.assert_called_once()
     assert console.clear_calls == 1

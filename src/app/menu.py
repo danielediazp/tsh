@@ -15,6 +15,8 @@ from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIn
 from utils.constant import PAGER_TOP, PAGER_BOTTOM, ENTER, UP_K, DOWN_K, ENTER_K, BACK_K
 from utils.models import Task
 from .task_form import TaskForm
+from utils.decorators import singleton
+from .app import TshStates
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +29,10 @@ MENU_INSTRUCTIONS = (
     + " arrows and "
     + ENTER
 )
+
+#TODO: This should be user customizable from the .tshconfig
+ADD_TASK_ACTION = ["a", "add"]
+EXIT_PROG_ACTION = ["e", "exit"]
 
 
 class Menu(ABC):
@@ -61,7 +67,7 @@ class Menu(ABC):
         self.csl: Console = csl
 
         # User Data
-        self._items: OrderedDict = OrderedDict()
+        self.items: OrderedDict = OrderedDict()
 
         # Screen interactions handler attributes
         self._selected_option: int | None = None
@@ -72,6 +78,7 @@ class Menu(ABC):
         self._slash_mode_on: bool = False
         self._slash_input: str = ""
         self._error_message: str | None = None
+        self.exit: bool = False
 
         self.load_data()
 
@@ -79,8 +86,8 @@ class Menu(ABC):
     def load_data(self) -> None:
         """Load and populate the menu items.
 
-        This method must be implemented by subclasses to populate the `_items` attribute
-        with the appropriate data. `_items` should be an `OrderedDict` where keys are
+        This method must be implemented by subclasses to populate the `items` attribute
+        with the appropriate data. `items` should be an `OrderedDict` where keys are
         unique identifiers, and values are the data associated with each menu option.
         """
         pass
@@ -114,7 +121,7 @@ class Menu(ABC):
         Returns:
             str: a str in the format [<UPPER BOUND> - <LOWER BOUND>]
         """
-        return f"[1-{len(self._items)}]"
+        return f"[1-{len(self.items)}]"
 
     def _get_menu(self, show_arrow: bool) -> str:
         """Build the paginated menu markup string.
@@ -130,8 +137,8 @@ class Menu(ABC):
         """
         self._update_window()
         lines = []
-        options = list(self._items.items())
-        window_end = min(self._window_start + self._page_size, len(self._items))
+        options = list(self.items.items())
+        window_end = min(self._window_start + self._page_size, len(self.items))
 
         if self._window_start > 0:
             lines.append(PAGER_TOP)
@@ -151,7 +158,7 @@ class Menu(ABC):
             else:
                 lines.append(f"   [{i + 1}] {title}")
 
-        if window_end < len(self._items):
+        if window_end < len(self.items):
             lines.append(PAGER_BOTTOM)
 
         menu_txt = "\n".join(lines)
@@ -182,7 +189,7 @@ class Menu(ABC):
         Returns:
             bool: True if the number represents a valid display on the screen, False otherwise.
         """
-        if 0 <= idx < len(self._items):
+        if 0 <= idx < len(self.items):
             self._error_message = None
             return True
 
@@ -199,7 +206,7 @@ class Menu(ABC):
             - In slash mode: builds slash_input, handles backspace and enter for validation.
             - Outside slash mode: Up/Down arrows to move selection, Enter to confirm.
         """
-        items = list(self._items.keys())
+        items = list(self.items.keys())
         self._selected_option = items[0]
         while not self._event.is_set():
             key = readchar.readkey()
@@ -210,17 +217,26 @@ class Menu(ABC):
                     self._slash_mode_on = True
                     self._slash_input = ""
                 elif key == UP_K:
-                    self._selected_idx = (self._selected_idx - 1) % len(self._items)
+                    self._selected_idx = (self._selected_idx - 1) % len(self.items)
                     self._selected_option = items[self._selected_idx]
                 elif key == DOWN_K:
-                    self._selected_idx = (self._selected_idx + 1) % len(self._items)
+                    self._selected_idx = (self._selected_idx + 1) % len(self.items)
                     self._selected_option = items[self._selected_idx]
                 elif key in ENTER_K:
                     if self._selected_option is not None:
                         self._event.set()
 
             else:
+                
                 if key in ENTER_K:  # Enter: attempt to parse
+                    if self._slash_input in ADD_TASK_ACTION:
+                        self._event.set()
+                        TshStates.add_new_state(TaskForm(self.csl))
+                        
+                    elif self._slash_input in EXIT_PROG_ACTION:
+                        self._event.set()
+                        self.exit = True
+
                     try:
                         choice_idx = int(self._slash_input) - 1
                     except ValueError:
@@ -244,7 +260,7 @@ class Menu(ABC):
         Launches key listener and updates display via Live.
         Returns the selected key.
         """
-        self._selected_option = next(iter(self._items))
+        self._selected_option = next(iter(self.items))
         self._event.clear()
 
         listener: Thread = Thread(target=self._key_listener, daemon=True)
@@ -278,13 +294,15 @@ class Menu(ABC):
         # MENU -> user select valid option -> task description tab
         while True:
             self._display_menu()
-            if self._selected_option:
+            if self.exit:
+                TshStates.exit()
+            elif self._selected_option:
                 self.csl.clear()
-                self.handle_selected_option(self._items[self._selected_option])
+                self.handle_selected_option(self.items[self._selected_option])
             else:
                 self.csl.clear()
 
-
+@singleton
 class MainMenu(Menu):
     """Main menu for displaying and interacting with a list of tasks.
 
@@ -297,36 +315,27 @@ class MainMenu(Menu):
     Args:
         csl (Console): Rich console instance used for rendering the menu.
         fetch_data (Callable[[], list[Task]]): A callable that retrieves the list of tasks to display.
-        back (Callable[[], None]): A callable that navigates back to the previous menu state.
-        add_new_state (Callable[[Any], None]): A callable that pushes a new state (e.g., a task form)
-            onto the application state manager stack.
 
     Attributes:
         fetch_data (Callable[[], list[Task]]): Retrieves the current list of tasks.
-        back (Callable[[], None]): Navigates back to the previous state.
-        add_new_state (Callable[[Any], None]): Adds a new state to the application stack.
     """
 
     def __init__(
         self,
         csl: Console,
         fetch_data: Callable[[None], list[Task]],
-        back: Callable[[None], None],
-        add_new_state: Callable[[None], None],
     ):
         self.fetch_data = fetch_data
-        self.back = back
-        self.add_new_state = add_new_state
         super().__init__(csl)
 
     def load_data(self) -> None:
         """Load the list of tasks into the menu.
 
-        Fetches tasks using the `fetch_data` callable and populates the `_items`
+        Fetches tasks using the `fetch_data` callable and populates the `items`
         attribute with task IDs as keys and `Task` objects as values.
         """
         items: list[Task] = self.fetch_data()
-        self._items = OrderedDict({item.id: item for item in items})
+        self.items = OrderedDict({item.id: item for item in items})
 
     def get_menu_option_str(self, item: Task) -> str:
         """Get the string representation of a task for menu display.
@@ -348,4 +357,4 @@ class MainMenu(Menu):
         Args:
             selected_option (Task): The selected task object.
         """
-        self.add_new_state(TaskForm(self.csl, self.back, selected_option))
+        TshStates.add_new_state(TaskForm(self.csl, selected_option))

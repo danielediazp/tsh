@@ -12,6 +12,7 @@ from utils.models import Task
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
 from utils.constant import UP_K, DOWN_K, RIGHT_K, LEFT_K, ENTER_K, BACK_K
 from utils.date import get_date
+from .app import TshStates
 
 TITLE = "Title"
 DESC = "Description"
@@ -47,11 +48,9 @@ class TaskForm:
 
     Args:
         csl (Console): Rich console instance used for rendering the form.
-        back (Callable[[], None]): A callable to navigate back to the previous application state.
         some_task (Task, optional): The task to edit. If None, the form initializes in creation mode.
 
     Attributes:
-        back (Callable[[], None]): Function to transition back to the previous view.
         csl (Console): Console instance for rendering.
         task (Task | None): The task being edited (or None if creating a new task).
         _created_at (str | None): Formatted creation date of the task (if editing).
@@ -62,11 +61,8 @@ class TaskForm:
     """
 
     def __init__(
-        self, csl: Console, back: Callable[[None], None], some_task: Task = None
+        self, csl: Console, some_task: Task = None
     ):
-        # Handle app state interactions
-        self.back: Callable[[None], None] = back
-
         self.csl: Console = csl
 
         # Data to display in the form
@@ -96,7 +92,7 @@ class TaskForm:
         Returns:
             str: The header of the string.
         """
-        if self.task is not None:
+        if self.task is not None: 
             return f"""{VIEW_EDIT_FORM_HEADER} 
 Task Created at: {self._created_at}
 """  # DO not modify Python String will Render tabs
@@ -228,7 +224,9 @@ Task Created at: {self._created_at}
     def submit_form(self):
         """Prepare and print the final JSON output."""
         # TODO: If the title or the description is different from the original update it in the db.
-        self.back()
+        if self.task is None:
+            new_task = Task(title=self.fields[0], description=self.fields[1])
+        TshStates.back()
 
     def run(self):
         """Main execution method for the form.
