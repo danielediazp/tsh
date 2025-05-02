@@ -60,9 +60,7 @@ class TaskForm:
         selection_event (Event): Signals when the form is ready for submission.
     """
 
-    def __init__(
-        self, csl: Console, some_task: Task = None
-    ):
+    def __init__(self, csl: Console, some_task: Task = None):
         self.csl: Console = csl
 
         # Data to display in the form
@@ -92,7 +90,7 @@ class TaskForm:
         Returns:
             str: The header of the string.
         """
-        if self.task is not None: 
+        if self.task is not None:
             return f"""{VIEW_EDIT_FORM_HEADER} 
 Task Created at: {self._created_at}
 """  # DO not modify Python String will Render tabs

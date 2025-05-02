@@ -1,7 +1,6 @@
 import logging
 
 from rich.console import Console
-import time
 
 from app.app import TshStates
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
@@ -25,6 +24,7 @@ def fetch_task_data():
     """
     A sample function that fetches data from the database and returns a list of Task objects.
     """
+    return {}
     tasks = [
         Task(id=i, title=f"Task {i}", description="some", created_at=datetime.now())
         for i in range(25)
@@ -41,8 +41,6 @@ def main():
             fetch_data=fetch_task_data,
         )
         TshStates.add_new_state(m_menu)
-        
-        time.sleep(100)
     except KeyboardInterrupt:
         csl.clear()
         csl.print(

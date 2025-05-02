@@ -24,7 +24,7 @@ class TshStates:
     """
 
     state_manager: ClassVar[list[Any]] = []
-    
+
     @classmethod
     def back(cls) -> None:
         """Transition back to the previous state in the state manager.
