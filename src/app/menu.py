@@ -52,6 +52,8 @@ class Menu(ABC):
         - Load and populate menu items via `load_data`.
         - Define how each item should be displayed via `get_menu_option_str`.
         - Implement the logic for handling the selected option via `handle_selected_option`.
+        - Define how to add new items to the menu if add_new_item is enable via `handle_new_item` \
+            this method should be override since by default `Menu` doesn't support adding new items.
 
     Attributes:
         csl (Console): Rich console instance for rendering the menu.
@@ -64,6 +66,7 @@ class Menu(ABC):
         _slash_mode_on (bool): Indicates whether the user is in slash input mode.
         _slash_input (str): The current input buffer for slash mode.
         _error_message (str | None): Error message to display (if any).
+        add_new_item (bool): True if new obj should handle adding a new item to the item list, False otherwise. Defaults to Fault.
     """
 
     def __init__(
@@ -300,7 +303,6 @@ class Menu(ABC):
         """
         pass
 
-    @abstractmethod
     def handle_new_item(self):
         pass
 
@@ -385,5 +387,6 @@ class MainMenu(Menu):
         """
         TshStates.add_new_state(TaskForm(self.csl, task))
 
+    @override
     def handle_new_item(self):
         self._transition_to_task_form()
