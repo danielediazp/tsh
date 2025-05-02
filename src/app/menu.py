@@ -12,7 +12,17 @@ from rich.live import Live
 from rich.text import Text
 
 from utils.csl_str_factory import csl_str_factory, CslStrStyleAttribute, ColorIndex
-from utils.constant import PAGER_TOP, PAGER_BOTTOM, ENTER, UP_K, DOWN_K, ENTER_K, BACK_K
+from utils.constant import (
+    PAGER_TOP,
+    PAGER_BOTTOM,
+    ENTER,
+    UP_K,
+    DOWN_K,
+    ENTER_K,
+    BACK_K,
+    ADD_ITEM_ACTION,
+    EXIT_PROG_ACTION,
+)
 from utils.models import Task
 from .task_form import TaskForm
 from utils.decorators import singleton
@@ -29,10 +39,6 @@ MENU_INSTRUCTIONS = (
     + " arrows and "
     + ENTER
 )
-
-# TODO: This should be user customizable from the .tshconfig
-ADD_ITEM_ACTION = ["a", "add"]
-EXIT_PROG_ACTION = ["e", "exit"]
 
 
 class Menu(ABC):

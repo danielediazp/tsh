@@ -24,7 +24,7 @@ def fetch_task_data():
     """
     A sample function that fetches data from the database and returns a list of Task objects.
     """
-    return {}
+    # return {}
     tasks = [
         Task(id=i, title=f"Task {i}", description="some", created_at=datetime.now())
         for i in range(25)
