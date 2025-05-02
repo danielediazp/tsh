@@ -304,6 +304,11 @@ class Menu(ABC):
         pass
 
     def handle_new_item(self):
+        """Handles adding a new item to the item list.
+
+        This method should be override by the Subclass if adding_new_item is enable. By default,
+        this is not implemented.
+        """
         pass
 
     def run(self) -> None:
@@ -389,4 +394,5 @@ class MainMenu(Menu):
 
     @override
     def handle_new_item(self):
+        """Handles adding a new item to the item list."""
         self._transition_to_task_form()
