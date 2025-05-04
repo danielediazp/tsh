@@ -25,7 +25,7 @@ from app.task_form import (
 
 @pytest.fixture
 def task_form_add_mode(console):
-    yield TaskForm(csl=console, back=Mock(), some_task=None)
+    yield TaskForm(csl=console, some_task=None)
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def dt_str():
 def task_form_vd_mode(console, title, desc):
     created = datetime(2025, 1, 1, 12, 0)
     task = Task(id=42, title=title, description=desc, created_at=created)
-    yield TaskForm(csl=console, back=Mock(), some_task=task)
+    yield TaskForm(csl=console, some_task=task)
 
 
 def test_task_form_init_add_mode(task_form_add_mode):
@@ -95,7 +95,7 @@ def test_insert_cursor_behavior(task_form_vd_mode):
     assert s == content[:3] + BLINKER + content[3:]
 
 
-def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode):
+def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode, mock_back):
     """
     Simulate:
         - typing "Hi" for the title
@@ -123,10 +123,10 @@ def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode):
 
     assert form.fields == ["Hi", "Desc"]
     assert console.clear_calls == 1
-    form.back.assert_called_once()
+    mock_back.assert_called_once()
 
 
-def test_backspace_and_navigation(console, dummy_live, monkeypatch, task_form_add_mode):
+def test_backspace_and_navigation(console, dummy_live, monkeypatch, task_form_add_mode, mock_back):
     """
     Simulate:
         - typing 'XYZ'
@@ -169,13 +169,13 @@ def test_backspace_and_navigation(console, dummy_live, monkeypatch, task_form_ad
     form.run()
 
     assert form.fields == ["X", "dap"]
-    form.back.assert_called_once()
+    mock_back.assert_called_once()
     assert console.clear_calls == 1
 
 
 # TODO: Modify this test once DB connection is added. Task requires an title field.
 def test_arrow_navigation_with_no_text(
-    console, dummy_live, monkeypatch, task_form_add_mode
+    console, dummy_live, monkeypatch, task_form_add_mode, mock_back
 ):
     """
     Simulates:
@@ -198,5 +198,5 @@ def test_arrow_navigation_with_no_text(
     form.run()
 
     assert form.fields == ["", ""]
-    form.back.assert_called_once()
+    mock_back.assert_called_once()
     assert console.clear_calls == 1

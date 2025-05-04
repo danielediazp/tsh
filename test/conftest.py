@@ -1,6 +1,7 @@
 import pytest
 import time
 from datetime import datetime
+from unittest.mock import patch
 
 from rich.console import Console
 from unittest.mock import Mock
@@ -84,7 +85,7 @@ def console():
 def main_menu(sample_tasks, console):
     fetch_data = Mock(return_value=sample_tasks)
     yield MainMenu(
-        csl=console, fetch_data=fetch_data, back=Mock(), add_new_state=Mock()
+        csl=console, fetch_data=fetch_data,
     )
 
 
@@ -111,3 +112,15 @@ class DummyLive:
 @pytest.fixture
 def dummy_live():
     yield DummyLive
+
+
+@pytest.fixture
+def mock_add_new_state():
+    with patch("app.app.TshStates.add_new_state") as p:
+        yield p
+
+
+@pytest.fixture
+def mock_back():
+    with patch("app.app.TshStates.back") as p:
+        yield p

@@ -185,7 +185,7 @@ class Menu(ABC):
                 )
                 + f"Enter a number {self._get_menu_range()} and press "
                 + ENTER
-                + "\n >"
+                + "\n > "
                 + f"{self._slash_input}"
             )
 
@@ -243,7 +243,6 @@ class Menu(ABC):
                     self._selected_idx = (self._selected_idx + 1) % len(self.items)
                     self._selected_option = items[self._selected_idx]
                 elif key in ENTER_K:
-                    LOGGER.info("selected option on enter %s", self._selected_option)
                     if self._selected_option is not None:
                         self._event.set()
 
@@ -267,6 +266,9 @@ class Menu(ABC):
                 elif key in BACK_K:  # Backspace
                     self._slash_input = self._slash_input[:-1]
                 elif key.isprintable():
+                    # Exit slash_mode if the user types "/" again
+                    if key == '/':
+                        self._slash_mode_on = False
                     self._slash_input += key
 
     def _display_menu(self) -> None:
