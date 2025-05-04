@@ -85,7 +85,8 @@ def console():
 def main_menu(sample_tasks, console):
     fetch_data = Mock(return_value=sample_tasks)
     yield MainMenu(
-        csl=console, fetch_data=fetch_data,
+        csl=console,
+        fetch_data=fetch_data,
     )
 
 

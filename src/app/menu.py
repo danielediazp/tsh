@@ -267,7 +267,7 @@ class Menu(ABC):
                     self._slash_input = self._slash_input[:-1]
                 elif key.isprintable():
                     # Exit slash_mode if the user types "/" again
-                    if key == '/':
+                    if key == "/":
                         self._slash_mode_on = False
                     self._slash_input += key
 

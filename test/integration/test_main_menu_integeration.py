@@ -55,7 +55,9 @@ def test_get_menu_markup_includes_tasks_and_instructions(main_menu):
     assert "[3] 3" in markup
 
 
-def test_display_and_selection_flow(monkeypatch, console, sample_tasks, dummy_live, mock_add_new_state):
+def test_display_and_selection_flow(
+    monkeypatch, console, sample_tasks, dummy_live, mock_add_new_state
+):
     monkeypatch.setattr(
         "app.menu.Live", dummy_live
     )  # Stub out Live to prevent real rendering

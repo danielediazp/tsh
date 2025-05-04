@@ -126,7 +126,9 @@ def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode, moc
     mock_back.assert_called_once()
 
 
-def test_backspace_and_navigation(console, dummy_live, monkeypatch, task_form_add_mode, mock_back):
+def test_backspace_and_navigation(
+    console, dummy_live, monkeypatch, task_form_add_mode, mock_back
+):
     """
     Simulate:
         - typing 'XYZ'
