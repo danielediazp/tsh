@@ -82,7 +82,10 @@ def console():
 
 
 @pytest.fixture
-def main_menu(sample_tasks, console):
+def main_menu(monkeypatch, dummy_live, sample_tasks, console):
+    monkeypatch.setattr(
+        "app.menu.Live", dummy_live
+    )  # Stub out Live to prevent real rendering
     fetch_data = Mock(return_value=sample_tasks)
     yield MainMenu(
         csl=console,
@@ -124,4 +127,10 @@ def mock_add_new_state():
 @pytest.fixture
 def mock_back():
     with patch("app.app.TshStates.back") as p:
+        yield p
+
+
+@pytest.fixture
+def mock_exit():
+    with patch("app.app.TshStates.exit") as p:
         yield p

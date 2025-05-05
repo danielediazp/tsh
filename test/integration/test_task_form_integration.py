@@ -2,7 +2,6 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock
 
-# from rich.panel import Panel
 from rich.console import Group
 
 from app.task_form import TaskForm
@@ -24,7 +23,10 @@ from app.task_form import (
 
 
 @pytest.fixture
-def task_form_add_mode(console):
+def task_form_add_mode(monkeypatch, dummy_live, console):
+    monkeypatch.setattr(
+        "app.task_form.Live", dummy_live
+    )  # stub out Live so no real rendering
     yield TaskForm(csl=console, some_task=None)
 
 
@@ -44,7 +46,10 @@ def dt_str():
 
 
 @pytest.fixture
-def task_form_vd_mode(console, title, desc):
+def task_form_vd_mode(monkeypatch, dummy_live, console, title, desc):
+    monkeypatch.setattr(
+        "app.task_form.Live", dummy_live
+    )  # stub out Live so no real rendering
     created = datetime(2025, 1, 1, 12, 0)
     task = Task(id=42, title=title, description=desc, created_at=created)
     yield TaskForm(csl=console, some_task=task)
@@ -95,7 +100,7 @@ def test_insert_cursor_behavior(task_form_vd_mode):
     assert s == content[:3] + BLINKER + content[3:]
 
 
-def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode, mock_back):
+def test_run_full_flow(console, monkeypatch, task_form_add_mode, mock_back):
     """
     Simulate:
         - typing "Hi" for the title
@@ -107,10 +112,6 @@ def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode, moc
         - console.clear called
         - back() called once
     """
-    monkeypatch.setattr(
-        "app.task_form.Live", dummy_live
-    )  # stub out Live so no real rendering
-
     # build a key sequence:
     # 'H','i', ENTER → move to desc, 'D','e','s','c', ENTER → submit
     seq = ["H", "i", ENTER_K[0], "D", "e", "s", "c", ENTER_K[0]]
@@ -126,9 +127,7 @@ def test_run_full_flow(console, dummy_live, monkeypatch, task_form_add_mode, moc
     mock_back.assert_called_once()
 
 
-def test_backspace_and_navigation(
-    console, dummy_live, monkeypatch, task_form_add_mode, mock_back
-):
+def test_backspace_and_navigation(console, monkeypatch, task_form_add_mode, mock_back):
     """
     Simulate:
         - typing 'XYZ'
@@ -142,7 +141,6 @@ def test_backspace_and_navigation(
     Check that:
         - editing and cursor movement behave as expected
     """
-    monkeypatch.setattr("app.task_form.Live", dummy_live)
 
     # Build sequence:
     # 'X','Y','Z', BACK, BACK → leaves 'X'
@@ -177,7 +175,7 @@ def test_backspace_and_navigation(
 
 # TODO: Modify this test once DB connection is added. Task requires an title field.
 def test_arrow_navigation_with_no_text(
-    console, dummy_live, monkeypatch, task_form_add_mode, mock_back
+    console, monkeypatch, task_form_add_mode, mock_back
 ):
     """
     Simulates:
@@ -188,10 +186,6 @@ def test_arrow_navigation_with_no_text(
     Check that:
         - The user can navigate through the form with the arrow keys
     """
-    monkeypatch.setattr(
-        "app.task_form.Live", dummy_live
-    )  # stub out Live so no real rendering
-
     seq = [DOWN_K, UP_K, DOWN_K, ENTER_K[0]]
     key_iter = iter(seq)
     monkeypatch.setattr("readchar.readkey", lambda: next(key_iter))

@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from app.menu import MainMenu
 from app.task_form import TaskForm
-from utils.constant import DOWN_K, ENTER_K, ADD_ITEM_ACTION
+from utils.constant import DOWN_K, ENTER_K, ADD_ITEM_ACTION, EXIT_PROG_ACTION
 
 
 def test_load_data_populates_items(main_menu):
@@ -56,12 +56,8 @@ def test_get_menu_markup_includes_tasks_and_instructions(main_menu):
 
 
 def test_display_and_selection_flow(
-    monkeypatch, console, sample_tasks, dummy_live, mock_add_new_state
+    monkeypatch, console, sample_tasks, mock_add_new_state
 ):
-    monkeypatch.setattr(
-        "app.menu.Live", dummy_live
-    )  # Stub out Live to prevent real rendering
-
     keys = iter([DOWN_K, ENTER_K[0]])  # Simulated DOWN and ENTER keys
     monkeypatch.setattr("readchar.readkey", lambda: next(keys))
 
@@ -77,3 +73,32 @@ def test_display_and_selection_flow(
 
     new_state = mock_add_new_state.call_args[0][0]
     assert isinstance(new_state, TaskForm)
+
+
+@pytest.mark.parametrize("action", [cmd for cmd in ADD_ITEM_ACTION])
+def test_main_menu_add_action(monkeypatch, main_menu, mock_add_new_state, action):
+    keys = iter(["/"] + [char for char in action] + [ENTER_K[0]])
+    monkeypatch.setattr("readchar.readkey", lambda: next(keys))
+    main_menu._display_menu()
+    assert main_menu._event.is_set()
+    assert main_menu._slash_input == action
+    main_menu.handle_new_item()
+    new_state = mock_add_new_state.call_args[0][0]
+    assert isinstance(new_state, TaskForm)
+
+
+@pytest.mark.parametrize("action", [cmd for cmd in EXIT_PROG_ACTION])
+def test_main_menu_exit_prog_action(monkeypatch, main_menu, mock_exit, action):
+    keys = iter(["/"] + list(action) + [ENTER_K[0]])
+    monkeypatch.setattr("readchar.readkey", lambda: next(keys))
+
+    main_menu._event.clear()
+    main_menu._exec = True
+    main_menu._key_listener()
+
+    assert main_menu._event.is_set()
+    assert main_menu._exec is False
+
+    main_menu.run()
+
+    mock_exit.assert_called_once()
